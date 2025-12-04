@@ -1,0 +1,96 @@
+
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Power BI Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    #toolbar {
+      display:flex; flex-wrap:wrap; gap:8px; align-items:center;
+      background:#f5f5f7; border:1px solid #ddd; padding:8px; margin-bottom:8px;
+      font-family:system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    }
+    #label { font-weight:600; margin-right:12px; }
+    #frameWrapper { width:100%; }
+    #pbiFrame { width:100%; border:0; }
+    button {
+      padding:6px 10px; border:1px solid #ccc; background:#fff; cursor:pointer; border-radius:4px;
+    }
+    button:hover { background:#f0f0f0; }
+    input[type="number"] { width:70px; padding:4px; }
+  </style>
+</head>
+<body>
+
+<div id="toolbar">
+  <span id="label">–</span>
+  <button id="prevReport">◀︎ Report</button>
+  <button id="nextReport">Report ▶︎</button>
+  <button id="toggleReportAuto">Auto Report: OFF</button>
+  <label>Timer report (s): <input type="number" id="reportTimer" min="5" value="60"></label>
+  <button id="fullscreenBtn">Fullscreen</button>
+</div>
+
+<div id="frameWrapper">
+  <iframe id="pbiFrame" src="" allowfullscreen></iframe>
+</div>
+
+<script>
+  const clean = (u) => (u || "").replace(/&amp;amp;|&amp;/g, "&");
+  const data = [{"name": "Disguidi Amazon", "pages": ["https://app.powerbi.com/view?r=eyJrIjoiNWMwMTZmZDEtNjVhOC00NTc2LTg2NjYtOTlkYTNkYjU5ZGFlIiwidCI6Ijc2MWRlNzZmLTNkNWMtNDE3NC05MTdjLTVhZDRkMDYzNjBjYiIsImMiOjh9"]}, {"name": "EAD Amazon", "pages": ["https://app.powerbi.com/view?r=eyJrIjoiNDA5ZTRlZmMtOWMxMS00MTljLTliY2UtZDFlZjE2NTNhOGRmIiwidCI6Ijc2MWRlNzZmLTNkNWMtNDE3NC05MTdjLTVhZDRkMDYzNjBjYiIsImMiOjh9&pageName=ReportSectionX"]}, {"name": "Andamento", "pages": ["https://app.powerbi.com/view?r=eyJrIjoiMmUwNGU2YjUtNDFiYS00MmViLWExOGMtMTRjZWExOGZkNzgwIiwidCI6Ijc2MWRlNzZmLTNkNWMtNDE3NC05MTdjLTVhZDRkMDYzNjBjYiIsImMiOjh9&pageName=ReportSection4f8b3a31bce6928f4d82"]}, {"name": "Prodotto sul Network", "pages": ["https://app.powerbi.com/view?r=eyJrIjoiNTBmNGViMGItOGIyNC00NDEwLWFiZTYtMWYzZDIxZjNiNDQwIiwidCI6Ijc2MWRlNzZmLTNkNWMtNDE3NC05MTdjLTVhZDRkMDYzNjBjYiIsImMiOjh9"]}, {"name": "Segnalazioni RTZ", "pages": ["https://app.powerbi.com/view?r=eyJrIjoiOGRhYWEwYjctNWM1My00ZWJiLTgwZDMtNjI5N2UzYzRhZjFjIiwidCI6Ijc2MWRlNzZmLTNkNWMtNDE3NC05MTdjLTVhZDRkMDYzNjBjYiIsImMiOjh9"]}, {"name": "Locker", "pages": ["https://app.powerbi.com/view?r=eyJrIjoiMjVlOWU5ODgtOTUxNy00YjhjLWE3YzQtNGU5YTMzZjdjM2RiIiwidCI6Ijc2MWRlNzZmLTNkNWMtNDE3NC05MTdjLTVhZDRkMDYzNjBjYiIsImMiOjh9"]}, {"name": "Giacenza", "pages": ["https://app.powerbi.com/view?r=eyJrIjoiY2ZkMTAwOTctOTUyOS00MDllLTliNTAtYmM1NmExZTU0Yjk2IiwidCI6Ijc2MWRlNzZmLTNkNWMtNDE3NC05MTdjLTVhZDRkMDYzNjBjYiIsImMiOjh9"]}, {"name": "Posta Registrata", "pages": ["https://app.powerbi.com/view?r=eyJrIjoiNjcyZGIwMzUtNTA3Ni00NzZmLWI5ZDEtZjllYTg2NzhiNGU2IiwidCI6Ijc2MWRlNzZmLTNkNWMtNDE3NC05MTdjLTVhZDRkMDYzNjBjYiIsImMiOjh9"]}, {"name": "Pacchi lavorati in CRA", "pages": ["https://app.powerbi.com/view?r=eyJrIjoiMGI4ODVmZWUtMzU4Ni00NWJkLTkyMjYtYWViOGUwMDlkNmE4IiwidCI6Ijc2MWRlNzZmLTNkNWMtNDE3NC05MTdjLTVhZDRkMDYzNjBjYiIsImMiOjh9"]}, {"name": "Sintesi Banchina", "pages": ["https://app.powerbi.com/view?r=eyJrIjoiY2Y0MWExMjQtODkzOS00ZDAyLWI2N2ItMGRhNDM0ZjY3Y2E5IiwidCI6Ijc2MWRlNzZmLTNkNWMtNDE3NC05MTdjLTVhZDRkMDYzNjBjYiIsImMiOjh9"]}];
+
+  let rIdx = 0;
+  let reportInterval = null;
+
+  function resizeFrame() {
+    const toolbarH = document.getElementById('toolbar').offsetHeight;
+    const h = window.innerHeight - toolbarH - 16;
+    document.getElementById('pbiFrame').style.height = h + 'px';
+  }
+  window.addEventListener('resize', resizeFrame);
+
+  function render() {
+    const frame = document.getElementById('pbiFrame');
+    frame.src = clean(data[rIdx].pages[0]);
+    document.getElementById('label').textContent =
+      `${data[rIdx].name} (Report ${rIdx+1}/${data.length})`;
+  }
+
+  function nextReport() { rIdx = (rIdx + 1) % data.length; render(); }
+  function prevReport() { rIdx = (rIdx - 1 + data.length) % data.length; render(); }
+
+  function startReportAuto() {
+    const seconds = parseInt(document.getElementById('reportTimer').value || '60', 10);
+    stopReportAuto();
+    reportInterval = setInterval(nextReport, seconds*1000);
+    document.getElementById('toggleReportAuto').textContent = 'Auto Report: ON';
+  }
+
+  function stopReportAuto() {
+    if (reportInterval) clearInterval(reportInterval);
+    reportInterval = null;
+    document.getElementById('toggleReportAuto').textContent = 'Auto Report: OFF';
+  }
+
+  function toggleReportAuto() {
+    if (reportInterval) stopReportAuto(); else startReportAuto();
+  }
+
+  document.getElementById('fullscreenBtn').onclick = () => {
+    const wrapper = document.getElementById('frameWrapper');
+    if (wrapper.requestFullscreen) wrapper.requestFullscreen();
+    else if (wrapper.webkitRequestFullscreen) wrapper.webkitRequestFullscreen();
+    else if (wrapper.msRequestFullscreen) wrapper.msRequestFullscreen();
+  };
+
+  document.getElementById('nextReport').onclick = nextReport;
+  document.getElementById('prevReport').onclick = prevReport;
+  document.getElementById('toggleReportAuto').onclick = toggleReportAuto;
+
+  resizeFrame();
+  render();
+</script>
+
+</body>
+</html>
